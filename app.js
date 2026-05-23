@@ -178,9 +178,7 @@ function atualizarAbas() {
 function renderizarLista(lista) {
   gradeEl.innerHTML = "";
 
-  const listaRender = lista.slice(0, 300);
-
-  for (const item of listaRender) {
+  for (const item of lista) {
     const card = document.createElement("div");
     card.className = `card ${tipoAtual === "canais" ? "canal" : ""}`;
 
