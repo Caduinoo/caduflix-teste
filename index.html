@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caduflix Teste</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topo">
+    <h1>Caduflix</h1>
+    <input id="busca" type="text" placeholder="Buscar filme..." />
+  </header>
+
+  <main>
+    <section id="status" class="status">Carregando catálogo...</section>
+    <section id="grade" class="grade"></section>
+  </main>
+
+  <div id="modal" class="modal escondido">
+    <div class="modal-conteudo">
+      <button id="fecharModal" class="fechar">×</button>
+
+      <img id="modalBanner" class="banner" alt="" />
+
+      <div class="modal-info">
+        <img id="modalCapa" class="capa-detalhe" alt="" />
+
+        <div>
+          <h2 id="modalTitulo"></h2>
+          <p id="modalDescricao"></p>
+
+          <div id="modalGeneros" class="generos"></div>
+
+          <h3>Opções</h3>
+          <div id="modalOpcoes" class="opcoes"></div>
+        </div>
+      </div>
+
+      <video id="player" class="player escondido" controls></video>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
