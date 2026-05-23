@@ -15,15 +15,19 @@ body {
   z-index: 10;
   background: #151515;
   padding: 16px;
+  border-bottom: 1px solid #333;
+}
+
+.linha-topo {
   display: flex;
   gap: 16px;
   align-items: center;
-  border-bottom: 1px solid #333;
 }
 
 .topo h1 {
   margin: 0;
   color: #e50914;
+  white-space: nowrap;
 }
 
 #busca {
@@ -34,6 +38,27 @@ body {
   background: #222;
   color: white;
   font-size: 16px;
+}
+
+.abas {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.aba {
+  background: #242424;
+  color: white;
+  border: 1px solid #333;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.aba.ativa {
+  background: #e50914;
+  border-color: #e50914;
 }
 
 .status {
@@ -53,11 +78,12 @@ body {
   background: #1c1c1c;
   border-radius: 12px;
   overflow: hidden;
-  transition: transform 0.2s;
+  transition: transform 0.2s, background 0.2s;
 }
 
 .card:hover {
   transform: scale(1.04);
+  background: #242424;
 }
 
 .card img {
@@ -65,6 +91,12 @@ body {
   height: 225px;
   object-fit: cover;
   background: #333;
+}
+
+.card.canal img {
+  height: 150px;
+  object-fit: contain;
+  padding: 18px;
 }
 
 .card-info {
@@ -140,6 +172,16 @@ body {
   background: #333;
 }
 
+.capa-detalhe.canal {
+  object-fit: contain;
+  background: #222;
+  padding: 18px;
+}
+
+.detalhes {
+  flex: 1;
+}
+
 .generos {
   display: flex;
   flex-wrap: wrap;
@@ -170,6 +212,11 @@ body {
   font-weight: bold;
 }
 
+.opcoes button:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
 .player {
   width: 100%;
   max-height: 500px;
@@ -177,6 +224,15 @@ body {
 }
 
 @media (max-width: 700px) {
+  .linha-topo {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .abas {
+    overflow-x: auto;
+  }
+
   .modal-info {
     flex-direction: column;
   }

@@ -8,8 +8,16 @@
 </head>
 <body>
   <header class="topo">
-    <h1>Caduflix</h1>
-    <input id="busca" type="text" placeholder="Buscar filme..." />
+    <div class="linha-topo">
+      <h1>Caduflix</h1>
+      <input id="busca" type="text" placeholder="Buscar..." />
+    </div>
+
+    <nav class="abas">
+      <button class="aba ativa" data-tipo="filmes">Filmes</button>
+      <button class="aba" data-tipo="series">Séries</button>
+      <button class="aba" data-tipo="canais">Canais</button>
+    </nav>
   </header>
 
   <main>
@@ -26,13 +34,13 @@
       <div class="modal-info">
         <img id="modalCapa" class="capa-detalhe" alt="" />
 
-        <div>
+        <div class="detalhes">
           <h2 id="modalTitulo"></h2>
           <p id="modalDescricao"></p>
 
           <div id="modalGeneros" class="generos"></div>
 
-          <h3>Opções</h3>
+          <h3 id="tituloOpcoes">Opções</h3>
           <div id="modalOpcoes" class="opcoes"></div>
         </div>
       </div>
