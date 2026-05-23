@@ -2,10 +2,21 @@ const CONFIG_URL = "https://caduinoo.github.io/caduflix-catalogo/config.json";
 
 let config = null;
 
+let indices = {
+  filmes: null,
+  series: null,
+  canais: null,
+};
+
 let dados = {
   filmes: [],
   series: [],
   canais: [],
+};
+
+let paginasCarregadas = {
+  filmes: 0,
+  series: 0,
 };
 
 let tipoAtual = "filmes";
@@ -59,28 +70,91 @@ async function carregarTipo(tipo) {
   tipoAtual = tipo;
   buscaEl.value = "";
 
+  limparPlayer();
   atualizarAbas();
 
-  if (dados[tipo].length === 0) {
-    statusEl.textContent = `Carregando ${nomeTipo(tipo)}...`;
+  if (tipo === "filmes") {
+    await carregarFilmes();
+  }
 
-    if (tipo === "filmes") {
-      dados.filmes = await carregarJson(config.catalogo.filmes);
-    }
+  if (tipo === "series") {
+    await carregarSeries();
+  }
 
-    if (tipo === "series") {
-      dados.series = await carregarJson(config.catalogo.series);
-    }
-
-    if (tipo === "canais") {
-      dados.canais = await carregarJson(config.catalogo.canais);
-    }
+  if (tipo === "canais") {
+    await carregarCanais();
   }
 
   listaAtual = dados[tipo];
 
-  statusEl.textContent = `${listaAtual.length} ${nomeTipo(tipo)} carregados. Mostrando até 200.`;
-  renderizarLista(listaAtual.slice(0, 200));
+  statusEl.textContent = `${listaAtual.length} ${nomeTipo(tipo)} carregados.`;
+  renderizarLista(listaAtual);
+}
+
+async function carregarFilmes() {
+  if (!indices.filmes) {
+    statusEl.textContent = "Carregando índice de filmes...";
+    indices.filmes = await carregarJson(config.catalogo.filmesIndex);
+  }
+
+  if (dados.filmes.length === 0) {
+    await carregarProximaPaginaFilmes();
+  }
+}
+
+async function carregarSeries() {
+  if (!indices.series) {
+    statusEl.textContent = "Carregando índice de séries...";
+    indices.series = await carregarJson(config.catalogo.seriesIndex);
+  }
+
+  if (dados.series.length === 0) {
+    await carregarProximaPaginaSeries();
+  }
+}
+
+async function carregarCanais() {
+  if (!indices.canais) {
+    statusEl.textContent = "Carregando índice de canais...";
+    indices.canais = await carregarJson(config.catalogo.canaisIndex);
+  }
+
+  if (dados.canais.length === 0) {
+    statusEl.textContent = "Carregando canais...";
+    dados.canais = await carregarJson(indices.canais.todos);
+  }
+}
+
+async function carregarProximaPaginaFilmes() {
+  if (!indices.filmes) return;
+
+  const proxima = paginasCarregadas.filmes + 1;
+
+  if (proxima > indices.filmes.paginas) return;
+
+  statusEl.textContent = `Carregando filmes página ${proxima}/${indices.filmes.paginas}...`;
+
+  const url = indices.filmes.todos.primeiraPagina.replace("page-1.json", `page-${proxima}.json`);
+  const pagina = await carregarJson(url);
+
+  dados.filmes.push(...pagina);
+  paginasCarregadas.filmes = proxima;
+}
+
+async function carregarProximaPaginaSeries() {
+  if (!indices.series) return;
+
+  const proxima = paginasCarregadas.series + 1;
+
+  if (proxima > indices.series.paginas) return;
+
+  statusEl.textContent = `Carregando séries página ${proxima}/${indices.series.paginas}...`;
+
+  const url = indices.series.todos.primeiraPagina.replace("page-1.json", `page-${proxima}.json`);
+  const pagina = await carregarJson(url);
+
+  dados.series.push(...pagina);
+  paginasCarregadas.series = proxima;
 }
 
 function nomeTipo(tipo) {
@@ -104,7 +178,9 @@ function atualizarAbas() {
 function renderizarLista(lista) {
   gradeEl.innerHTML = "";
 
-  for (const item of lista) {
+  const listaRender = lista.slice(0, 300);
+
+  for (const item of listaRender) {
     const card = document.createElement("div");
     card.className = `card ${tipoAtual === "canais" ? "canal" : ""}`;
 
@@ -122,6 +198,56 @@ function renderizarLista(lista) {
 
     gradeEl.appendChild(card);
   }
+
+  if ((tipoAtual === "filmes" || tipoAtual === "series") && !buscaEl.value.trim()) {
+    adicionarBotaoCarregarMais();
+  }
+}
+
+function adicionarBotaoCarregarMais() {
+  const totalPaginas = tipoAtual === "filmes"
+    ? indices.filmes?.paginas || 0
+    : indices.series?.paginas || 0;
+
+  const paginasAtuais = tipoAtual === "filmes"
+    ? paginasCarregadas.filmes
+    : paginasCarregadas.series;
+
+  if (paginasAtuais >= totalPaginas) return;
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "card";
+  wrapper.style.display = "flex";
+  wrapper.style.alignItems = "center";
+  wrapper.style.justifyContent = "center";
+  wrapper.style.minHeight = "225px";
+
+  wrapper.innerHTML = `
+    <div class="card-info" style="text-align:center;">
+      <h3>Carregar mais</h3>
+      <p>Página ${paginasAtuais + 1} de ${totalPaginas}</p>
+    </div>
+  `;
+
+  wrapper.addEventListener("click", async () => {
+    try {
+      if (tipoAtual === "filmes") {
+        await carregarProximaPaginaFilmes();
+        listaAtual = dados.filmes;
+      } else {
+        await carregarProximaPaginaSeries();
+        listaAtual = dados.series;
+      }
+
+      statusEl.textContent = `${listaAtual.length} ${nomeTipo(tipoAtual)} carregados.`;
+      renderizarLista(listaAtual);
+    } catch (erro) {
+      console.error(erro);
+      alert("Erro ao carregar próxima página.");
+    }
+  });
+
+  gradeEl.appendChild(wrapper);
 }
 
 function textoSecundario(item) {
@@ -136,66 +262,80 @@ function textoSecundario(item) {
   return "";
 }
 
-function abrirDetalhes(item) {
-  itemAtual = item;
+async function abrirDetalhes(itemLista) {
+  try {
+    limparPlayer();
 
-  modal.classList.remove("escondido");
+    let item = itemLista;
 
-  limparPlayer();
+    if ((tipoAtual === "filmes" || tipoAtual === "series") && itemLista.detalhesUrl) {
+      statusEl.textContent = "Carregando detalhes...";
+      item = await carregarJson(itemLista.detalhesUrl);
+    }
 
-  const imagem = item.capa || item.banner || item.logo || item.stream_icon;
-  const banner = item.banner || item.capa || item.logo || item.stream_icon;
+    itemAtual = item;
 
-  modalBanner.src = imagemOuPlaceholder(banner, "Sem Banner");
-  modalCapa.src = imagemOuPlaceholder(imagem, "Sem Capa");
+    modal.classList.remove("escondido");
 
-  modalCapa.classList.toggle("canal", tipoAtual === "canais");
+    const imagem = item.capa || item.banner || item.logo || item.stream_icon;
+    const banner = item.banner || item.capa || item.logo || item.stream_icon;
 
-  modalTitulo.textContent = item.titulo;
-  modalDescricao.textContent = item.descricao || item.plot || item.categoria || "Sem descrição.";
+    modalBanner.src = imagemOuPlaceholder(banner, "Sem Banner");
+    modalCapa.src = imagemOuPlaceholder(imagem, "Sem Capa");
 
-  modalGeneros.innerHTML = "";
+    modalCapa.classList.toggle("canal", tipoAtual === "canais");
 
-  const etiquetas = tipoAtual === "canais"
-    ? [item.categoria || "Canal"]
-    : item.generos || [];
+    modalTitulo.textContent = item.titulo;
+    modalDescricao.textContent = item.descricao || item.plot || item.categoria || "Sem descrição.";
 
-  for (const etiqueta of etiquetas) {
-    const span = document.createElement("span");
-    span.className = "genero";
-    span.textContent = etiqueta;
-    modalGeneros.appendChild(span);
-  }
+    modalGeneros.innerHTML = "";
 
-  modalOpcoes.innerHTML = "";
+    const etiquetas = tipoAtual === "canais"
+      ? [item.categoria || "Canal"]
+      : item.generos || [];
 
-  if (tipoAtual === "filmes") {
-    tituloOpcoes.textContent = "Opções";
+    for (const etiqueta of etiquetas) {
+      const span = document.createElement("span");
+      span.className = "genero";
+      span.textContent = etiqueta;
+      modalGeneros.appendChild(span);
+    }
 
-    for (const opcao of item.opcoes || []) {
+    modalOpcoes.innerHTML = "";
+
+    if (tipoAtual === "filmes") {
+      tituloOpcoes.textContent = "Opções";
+
+      for (const opcao of item.opcoes || []) {
+        const botao = document.createElement("button");
+        botao.textContent = opcao.nome || "Assistir";
+        botao.addEventListener("click", () => assistirFilme(opcao));
+        modalOpcoes.appendChild(botao);
+      }
+    }
+
+    if (tipoAtual === "series") {
+      tituloOpcoes.textContent = "Séries";
+
+      const aviso = document.createElement("p");
+      aviso.textContent = "Nesta versão de teste, as séries aparecem no catálogo. Os episódios entram na próxima etapa do gerador.";
+      aviso.style.color = "#bbb";
+      modalOpcoes.appendChild(aviso);
+    }
+
+    if (tipoAtual === "canais") {
+      tituloOpcoes.textContent = "Ao vivo";
+
       const botao = document.createElement("button");
-      botao.textContent = opcao.nome || "Assistir";
-      botao.addEventListener("click", () => assistirFilme(opcao));
+      botao.textContent = "Assistir canal";
+      botao.addEventListener("click", () => assistirCanal(item));
       modalOpcoes.appendChild(botao);
     }
-  }
 
-  if (tipoAtual === "series") {
-    tituloOpcoes.textContent = "Séries";
-
-    const aviso = document.createElement("p");
-    aviso.textContent = "Nesta versão de teste, as séries aparecem no catálogo, mas os episódios serão organizados no gerador completo.";
-    aviso.style.color = "#bbb";
-    modalOpcoes.appendChild(aviso);
-  }
-
-  if (tipoAtual === "canais") {
-    tituloOpcoes.textContent = "Ao vivo";
-
-    const botao = document.createElement("button");
-    botao.textContent = "Assistir canal";
-    botao.addEventListener("click", () => assistirCanal(item));
-    modalOpcoes.appendChild(botao);
+    statusEl.textContent = `${listaAtual.length} ${nomeTipo(tipoAtual)} carregados.`;
+  } catch (erro) {
+    console.error(erro);
+    alert("Erro ao abrir detalhes. Veja o console.");
   }
 }
 
@@ -297,13 +437,19 @@ buscaEl.addEventListener("input", () => {
     );
   }
 
-  statusEl.textContent = `${filtrados.length} resultado(s). Mostrando até 200.`;
-  renderizarLista(filtrados.slice(0, 200));
+  statusEl.textContent = `${filtrados.length} resultado(s). Mostrando até 300.`;
+  renderizarLista(filtrados);
 });
 
 abas.forEach((aba) => {
-  aba.addEventListener("click", () => {
-    carregarTipo(aba.dataset.tipo);
+  aba.addEventListener("click", async () => {
+    try {
+      await carregarTipo(aba.dataset.tipo);
+    } catch (erro) {
+      console.error(erro);
+      statusEl.textContent = `Erro ao carregar ${aba.dataset.tipo}. Veja o console.`;
+      alert(`Erro ao carregar ${aba.dataset.tipo}.`);
+    }
   });
 });
 
