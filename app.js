@@ -313,13 +313,41 @@ async function abrirDetalhes(itemLista) {
     }
 
     if (tipoAtual === "series") {
-      tituloOpcoes.textContent = "Séries";
+  tituloOpcoes.textContent = "Temporadas";
 
-      const aviso = document.createElement("p");
-      aviso.textContent = "Nesta versão de teste, as séries aparecem no catálogo. Os episódios entram na próxima etapa do gerador.";
-      aviso.style.color = "#bbb";
-      modalOpcoes.appendChild(aviso);
+  if (!item.temporadas || item.temporadas.length === 0) {
+    const aviso = document.createElement("p");
+    aviso.textContent = "Nenhum episódio encontrado para esta série.";
+    aviso.style.color = "#bbb";
+    modalOpcoes.appendChild(aviso);
+  } else {
+    for (const temporada of item.temporadas) {
+      const blocoTemporada = document.createElement("div");
+      blocoTemporada.className = "temporada";
+
+      const tituloTemporada = document.createElement("h4");
+      tituloTemporada.textContent = temporada.nome || `Temporada ${temporada.numero}`;
+      blocoTemporada.appendChild(tituloTemporada);
+
+      const listaEpisodios = document.createElement("div");
+      listaEpisodios.className = "episodios";
+
+      for (const episodio of temporada.episodios || []) {
+        const botaoEp = document.createElement("button");
+
+        const numero = episodio.numero ? `${episodio.numero}. ` : "";
+        botaoEp.textContent = `${numero}${episodio.titulo || "Episódio"}`;
+
+        botaoEp.addEventListener("click", () => assistirEpisodio(episodio));
+
+        listaEpisodios.appendChild(botaoEp);
+      }
+
+      blocoTemporada.appendChild(listaEpisodios);
+      modalOpcoes.appendChild(blocoTemporada);
     }
+  }
+}
 
     if (tipoAtual === "canais") {
       tituloOpcoes.textContent = "Ao vivo";
@@ -352,6 +380,27 @@ async function assistirFilme(opcao) {
   } catch (erro) {
     console.error(erro);
     alert("Erro ao tentar reproduzir filme. Veja o console.");
+  } finally {
+    setBotoesCarregando(false);
+  }
+}
+
+async function assistirEpisodio(episodio) {
+  try {
+    setBotoesCarregando(true);
+
+    const url = new URL(config.api.play);
+
+    url.searchParams.set("tipo", "series");
+    url.searchParams.set("id", episodio.xtreamId);
+    url.searchParams.set("container", episodio.container || "mp4");
+
+    const dadosPlay = await buscarPlayUrl(url);
+
+    tocarVideo(dadosPlay.url);
+  } catch (erro) {
+    console.error(erro);
+    alert("Erro ao tentar reproduzir episódio. Veja o console.");
   } finally {
     setBotoesCarregando(false);
   }
